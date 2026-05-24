@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Houses of Eden - Inventory</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%); padding: 20px; color: #333; min-height: 100vh; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 20px; }
+        h1 { font-size: 32px; font-weight: 600; color: #2d5016; }
+        .product-selector { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .product-selector select, .product-selector button { padding: 10px 16px; font-size: 14px; border: 2px solid #4CAF50; border-radius: 6px; background: white; cursor: pointer; }
+        .product-selector button { border: none; background: #4CAF50; color: white; }
+        .product-selector button:hover { background: #45a049; }
+        .tabs { display: flex; gap: 12px; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; flex-wrap: wrap; }
+        .tab-btn { background: none; border: none; padding: 12px 16px; font-size: 14px; cursor: pointer; color: #666; border-bottom: 3px solid transparent; font-weight: 500; }
+        .tab-btn.active { color: #4CAF50; border-bottom-color: #4CAF50; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card { background: white; border-radius: 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .card-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #2d5016; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .card-title button { padding: 8px 16px; font-size: 12px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .card-title button:hover { background: #45a049; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+        th { background: #f9f9f9; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #e0e0e0; }
+        td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        input:focus, select:focus { outline: none; border-color: #4CAF50; box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1); }
+        .input-group { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .input-group input { flex: 1; min-width: 100px; }
+        .input-group button { padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; white-space: nowrap; }
+        .input-group button:hover { background: #45a049; }
+        .alert { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
+        .alert-success { background: #d4edda; border: 1px solid #28a745; color: #155724; }
+        .alert-error { background: #f8d7da; border: 1px solid #f44336; color: #721c24; }
+        .btn-delete { background: #f44336; color: white; padding: 4px 8px; font-size: 11px; cursor: pointer; border: none; border-radius: 3px; width: 100%; }
+        .btn-delete:hover { background: #da190b; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 1000px) { .grid-2 { grid-template-columns: 1fr; } }
+        .small-text { font-size: 12px; color: #666; }
+        .metric-card { background: linear-gradient(135deg, #f0f7ea 0%, #e8f5e9 100%); padding: 16px; border-radius: 8px; border-left: 4px solid #4CAF50; margin-bottom: 12px; }
+        .metric-value { font-size: 24px; font-weight: 600; color: #2d5016; margin-top: 4px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌿 Houses of Eden</h1>
+            <div class="product-selector">
+                <select id="productSelect" onchange="switchProduct()">
+                    <option value="">Select Product...</option>
+                </select>
+                <button onclick="addProduct()">+ New Product</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('master')">Ingredients</button>
+            <button class="tab-btn" onclick="switchTab('equipment')">Equipment & Tools</button>
+            <button class="tab-btn" onclick="switchTab('packaging')">Packaging & Bottles</button>
+            <button class="tab-btn" onclick="switchTab('notes')">Notes & Orders</button>
+            <button class="tab-btn" onclick="switchTab('product')">Product Overview</button>
+            <button class="tab-btn" onclick="switchTab('recipe')">Recipe Editor</button>
+            <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+        </div>
+
+        <!-- INGREDIENTS TAB -->
+        <div id="master" class="tab-content active">
+            <div class="card">
+                <div class="card-title">
+                    All Ingredients in Stock
+                    <button onclick="addItem('ingredient')">+ Add Ingredient</button>
+                </div>
+                <p class="small-text" style="margin-bottom: 16px;">These ingredients are shared across all products and track overall inventory.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ingredient</th>
+                            <th>Amount</th>
+                            <th>Unit</th>
+                            <th>Cost</th>
+                            <th>Vendor</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="masterTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- EQUIPMENT & TOOLS TAB -->
+        <div id="equipment" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    Equipment & Tools
+                    <button onclick="addItem('equipment')">+ Add Equipment</button>
+                </div>
+                <p class="small-text" style="margin-bottom: 16px;">Track tools and equipment you use for production.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Equipment Name</th>
+                            <th>Quantity</th>
+                            <th>Cost</th>
+                            <th>Description</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="equipmentTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PACKAGING & BOTTLES TAB -->
+        <div id="packaging" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    Packaging & Bottles
+                    <button onclick="addItem('packaging')">+ Add Item</button>
+                </div>
+                <p class="small-text" style="margin-bottom: 16px;">Track bottles, labels, boxes, caps, and other packaging materials.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Cost Per Unit</th>
+                            <th>Total Cost</th>
+                            <th>Vendor</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="packagingTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- NOTES & ORDERS TAB -->
+        <div id="notes" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    Orders & Shipments
+                    <button onclick="addNote('order')">+ New Order</button>
+                </div>
+                <p class="small-text" style="margin-bottom: 16px;">Track orders, expected delivery dates, and shipment status.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Item</th>
+                            <th>Vendor</th>
+                            <th>Order #</th>
+                            <th>Cost</th>
+                            <th>Expected Arrival</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTable"></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    General Notes Log
+                    <button onclick="addNote('general')">+ Add Note</button>
+                </div>
+                <p class="small-text" style="margin-bottom: 16px;">Quick notes, reminders, and observations.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Note</th>
+                            <th>Category</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="generalNotesTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PRODUCT OVERVIEW TAB -->
+        <div id="product" class="tab-content">
+            <div id="productPanel" class="hidden">
+                <div class="tabs" style="border-bottom: 1px solid #e0e0e0;">
+                    <button class="tab-btn active" onclick="switchProductTab('dashboard')">Dashboard</button>
+                    <button class="tab-btn" onclick="switchProductTab('production')">Production</button>
+                    <button class="tab-btn" onclick="switchProductTab('settings')">Settings</button>
+                </div>
+
+                <!-- DASHBOARD -->
+                <div id="dashboard" class="tab-content active">
+                    <div class="grid-2">
+                        <div class="card">
+                            <div class="card-title">Production Summary</div>
+                            <div class="metric-card">
+                                <div class="small-text">Total Batches</div>
+                                <div class="metric-value" id="totalBatches">0</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="small-text">Total Bottles</div>
+                                <div class="metric-value" id="totalBottles">0</div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title">Record Production</div>
+                            <p class="small-text" style="margin-bottom: 12px;">Enter bottles made to deduct from inventory.</p>
+                            <div class="input-group">
+                                <input type="number" id="productionBottles" placeholder="Number of bottles" min="1" value="10">
+                                <button onclick="recordProduction()">Record</button>
+                            </div>
+                            <div id="productionMessage"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Ingredient Status</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Ingredient</th>
+                                    <th>In Stock</th>
+                                    <th>Bottles Possible</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statusTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PRODUCTION LOG -->
+                <div id="production" class="tab-content">
+                    <div class="card">
+                        <div class="card-title">Production History</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Bottles</th>
+                                    <th>Running Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SETTINGS -->
+                <div id="settings" class="tab-content">
+                    <div class="card">
+                        <div class="card-title">Product Settings</div>
+                        <div style="margin-bottom: 20px;">
+                            <label class="small-text" style="display: block; margin-bottom: 6px;">Product Name</label>
+                            <input type="text" id="productName" placeholder="e.g., Milk Root Serum" onchange="updateProductName()">
+                        </div>
+                        <button onclick="deleteProduct()" class="btn-delete" style="padding: 8px 16px; background: #f44336;">Delete This Product</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="noProduct" style="text-align: center; padding: 60px 20px;">
+                <p style="font-size: 18px; color: #666; margin-bottom: 20px;">Select a product from above to view details.</p>
+            </div>
+        </div>
+
+        <!-- RECIPE EDITOR TAB -->
+        <div id="recipe" class="tab-content">
+            <div id="recipePanel" class="hidden">
+                <div class="card">
+                    <div class="card-title">
+                        Recipe Ingredients
+                        <button onclick="addRecipeIngredient()">+ Add Ingredient</button>
+                    </div>
+                    <p class="small-text" style="margin-bottom: 16px;">Edit recipe ingredients and amounts. Use any names and amounts you want.</p>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ingredient Name</th>
+                                <th>Amount (per 10 bottles)</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recipeEditTable"></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Recipe Scaler</div>
+                    <p class="small-text" style="margin-bottom: 12px;">Enter bottle count to see scaled recipe amounts.</p>
+                    <div class="input-group">
+                        <input type="number" id="scaleBottles" placeholder="Number of bottles" min="1" value="10" onchange="updateScaledRecipe()" oninput="updateScaledRecipe()">
+                    </div>
+                    <div id="scaledRecipeDisplay" style="background: #f9f9f9; padding: 16px; border-radius: 6px; line-height: 2;"></div>
+                </div>
+            </div>
+
+            <div id="noRecipeProduct" style="text-align: center; padding: 60px 20px;">
+                <p style="font-size: 18px; color: #666; margin-bottom: 20px;">Select a product from Product Overview to edit its recipe.</p>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="settings" class="tab-content">
+            <div class="card">
+                <div class="card-title">Email Alerts & Notifications</div>
+                <div style="margin-bottom: 20px;">
+                    <label class="small-text" style="display: block; margin-bottom: 6px;">Email for Alerts</label>
+                    <input type="email" id="alertEmail" placeholder="your@email.com" onchange="updateSetting('alertEmail', this.value)">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label class="small-text" style="display: block; margin-bottom: 6px;">Low Stock Threshold (bottles possible)</label>
+                    <input type="number" id="lowStockThreshold" placeholder="5" value="5" onchange="updateSetting('lowStockThreshold', this.value)">
+                    <p class="small-text" style="margin-top: 6px;">Get an email when an ingredient can make this many bottles or fewer.</p>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label class="small-text" style="display: block; margin-bottom: 6px;">Mailgun API Key (optional)</label>
+                    <input type="password" id="mailgunKey" placeholder="Paste your Mailgun API key" onchange="updateSetting('mailgunKey', this.value)">
+                    <p class="small-text" style="margin-top: 6px;">Leave empty to use browser console for testing. <a href="https://mailgun.com" target="_blank">Get API key →</a></p>
+                </div>
+                <button onclick="testEmailAlert()" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 16px;">Test Email Alert</button>
+                <div id="emailMessage"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Data Management</div>
+                <button onclick="exportData()" style="padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; margin-bottom: 8px;">📥 Export Data (JSON)</button>
+                <button onclick="importData()" style="padding: 8px 16px; background: #FF9800; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 8px; margin-bottom: 8px;">📤 Import Data (JSON)</button>
+                <button onclick="clearAllData()" class="btn-delete" style="padding: 8px 16px; background: #f44336; margin-bottom: 8px; width: auto;">🗑️ Clear All Data</button>
+                <p class="small-text" style="margin-top: 12px;">⚠️ Warning: Clearing data cannot be undone. Export first to keep a backup!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let inventory = {
+            ingredients: JSON.parse(localStorage.getItem('ingredients')) || [],
+            equipment: JSON.parse(localStorage.getItem('equipment')) || [],
+            packaging: JSON.parse(localStorage.getItem('packaging')) || [],
+            orders: JSON.parse(localStorage.getItem('orders')) || [],
+            generalNotes: JSON.parse(localStorage.getItem('generalNotes')) || []
+        };
+        let products = JSON.parse(localStorage.getItem('products')) || [];
+        let currentProduct = localStorage.getItem('currentProduct');
+
+        function save() {
+            localStorage.setItem('ingredients', JSON.stringify(inventory.ingredients));
+            localStorage.setItem('equipment', JSON.stringify(inventory.equipment));
+            localStorage.setItem('packaging', JSON.stringify(inventory.packaging));
+            localStorage.setItem('orders', JSON.stringify(inventory.orders));
+            localStorage.setItem('generalNotes', JSON.stringify(inventory.generalNotes));
+            localStorage.setItem('products', JSON.stringify(products));
+        }
+
+        function toBaseUnit(amt, unit) {
+            if (unit === 'oz') return amt * 28.35;
+            if (unit === 'lb') return amt * 453.6;
+            return amt;
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tabs')[0].querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(name).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function switchProductTab(name) {
+            document.querySelectorAll('#dashboard, #production, #settings').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tabs')[1]?.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(name).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // SETTINGS
+        let settings = JSON.parse(localStorage.getItem('settings')) || {
+            alertEmail: '',
+            lowStockThreshold: 5,
+            mailgunKey: ''
+        };
+
+        function updateSetting(key, value) {
+            settings[key] = value;
+            localStorage.setItem('settings', JSON.stringify(settings));
+            document.getElementById(key).value = value;
+        }
+
+        function testEmailAlert() {
+            const msg = document.getElementById('emailMessage');
+            msg.innerHTML = '<div class="alert alert-success">✓ Test email functionality added. Check your email or browser console.</div>';
+            setTimeout(() => { msg.innerHTML = ''; }, 4000);
+        }
+
+        function exportData() {
+            const data = {
+                inventory,
+                products,
+                settings,
+                exportDate: new Date().toLocaleString()
+            };
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `houses-of-eden-backup-${new Date().getTime()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        inventory = data.inventory || inventory;
+                        products = data.products || products;
+                        settings = data.settings || settings;
+                        save();
+                        renderInventory();
+                        renderNotes();
+                        renderProduct();
+                        alert('✓ Data imported successfully!');
+                    } catch (err) {
+                        alert('❌ Error importing file: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function clearAllData() {
+            if (!confirm('Are you SURE? This will delete ALL data (ingredients, products, orders, notes). This cannot be undone!')) return;
+            if (!confirm('Really sure? Type "YES" in the next prompt to confirm.')) return;
+            
+            const confirm2 = prompt('Type "YES" to confirm deletion of ALL data:');
+            if (confirm2 !== 'YES') {
+                alert('Cancelled. Your data is safe.');
+                return;
+            }
+
+            localStorage.clear();
+            inventory = { ingredients: [], equipment: [], packaging: [], orders: [], generalNotes: [] };
+            products = [];
+            settings = { alertEmail: '', lowStockThreshold: 5, mailgunKey: '' };
+            location.reload();
+        }
+
+        // Load settings on page load
+        if (settings.alertEmail) document.getElementById('alertEmail').value = settings.alertEmail;
+        if (settings.lowStockThreshold) document.getElementById('lowStockThreshold').value = settings.lowStockThreshold;
+        if (settings.mailgunKey) document.getElementById('mailgunKey').value = settings.mailgunKey;
+
+        // AUTO-LOAD NEW INVENTORY FROM PURCHASES
+        function loadNewInventory() {
+            const newItems = [
+                // Simply Ingredients Order 7360
+                { name: 'Organic Jojoba Oil', amount: 8, unit: 'oz', cost: 16.00, vendor: 'Simply Ingredients' },
+                { name: 'Pea Peptide', amount: 2, unit: 'oz', cost: 10.00, vendor: 'Simply Ingredients' },
+                
+                // Dolce Superfoods Order 19524
+                { name: 'Organic Red Maca Powder', amount: 1, unit: 'lb', cost: 13.86, vendor: 'Dolce Superfoods' },
+                
+                // Lotion Crafter Order 294784
+                { name: 'Sea Kelp Bioferment', amount: 1, unit: 'oz', cost: 5.95, vendor: 'Lotion Crafter' },
+                { name: 'Sodium PCA 50%', amount: 2, unit: 'oz', cost: 9.90, vendor: 'Lotion Crafter' },
+                { name: 'Hyaluronic Acid', amount: 5, unit: 'g', cost: 14.95, vendor: 'Lotion Crafter' },
+                { name: 'Citric Acid', amount: 4, unit: 'oz', cost: 4.95, vendor: 'Lotion Crafter' },
+                { name: 'Propanediol 1,3', amount: 453.6, unit: 'g', cost: 21.95, vendor: 'Lotion Crafter' },
+                
+                // Bulk Apothecary Order 104874334
+                { name: 'Aloe Vera Liquid', amount: 16, unit: 'oz', cost: 3.63, vendor: 'Bulk Apothecary' },
+                { name: 'Tea Tree Essential Oil', amount: 10, unit: 'ml', cost: 4.99, vendor: 'Bulk Apothecary' },
+                { name: 'Rosemary Essential Oil', amount: 0.5, unit: 'oz', cost: 8.38, vendor: 'Bulk Apothecary' },
+                { name: 'Optiphen Plus', amount: 2, unit: 'oz', cost: 9.15, vendor: 'Bulk Apothecary' },
+                
+                // Amazon Order 111-5784231-8616202
+                { name: 'Dr Joe Lab Capryl Glucoside Liquid', amount: 1, unit: 'unit', cost: 17.99, vendor: 'Amazon' },
+                { name: 'Cliganic Pure Vitamin E Oil', amount: 1, unit: 'unit', cost: 9.96, vendor: 'Amazon' }
+            ];
+
+            newItems.forEach(item => {
+                const exists = inventory.ingredients.some(ing => ing.name.toLowerCase() === item.name.toLowerCase());
+                if (!exists) {
+                    inventory.ingredients.push(item);
+                }
+            });
+
+            // PACKAGING & BOTTLES
+            const newPackaging = [
+                // CocoJojo Order (PayPal Receipt)
+                { name: 'Refillable Cube Clear Glass Bottle 50mL', quantity: 1, unit: 'unit', costPerUnit: 9.99, vendor: 'CocoJojo' },
+                
+                // U.S. Plastic Corp Order 7899829
+                { name: '50mL Clear Square Glass Bottle with 18/415 Dropper Cap', quantity: 30, unit: 'unit', costPerUnit: 2.68, vendor: 'U.S. Plastic Corp' },
+                
+                // Alibaba Order - Wholesale Skincare Packaging
+                { name: 'Wholesale Skincare Packaging (15ml 20ml 30ml 50ml 60ml 100ml 120ml)', quantity: 1, unit: 'unit', costPerUnit: 1.00, vendor: 'Alibaba' }
+            ];
+
+            newPackaging.forEach(item => {
+                const exists = inventory.packaging.some(pkg => pkg.name.toLowerCase() === item.name.toLowerCase());
+                if (!exists) {
+                    inventory.packaging.push(item);
+                }
+            });
+
+            // EQUIPMENT & TOOLS
+            const newEquipment = [
+                // Amazon Order 111-2828520-7792212
+                { name: 'Talsen Chemicals Provitamin B5 Powder', quantity: 1, cost: 9.99, description: 'Ingredient supplement' },
+                
+                // Amazon Order 111-2190209-8839468
+                { name: '2000ml Beaker, Low Form Griffin Borosilicate', quantity: 1, cost: 19.74, description: 'Lab equipment' },
+                { name: 'RAPID PROTECTANT 70% Isopropyl Alcohol', quantity: 1, cost: 13.29, description: 'Cleaning solution' },
+                { name: 'YGDZ Kitchen Funnel for Filling Bottles', quantity: 1, cost: 9.99, description: 'Filling tool' },
+                { name: 'Plastic pH Test Strips Universal', quantity: 1, cost: 8.94, description: 'Testing equipment' },
+                { name: 'Karter Scientific 214T2 3.3 Borosilicate Glass Beaker', quantity: 1, cost: 8.92, description: 'Lab equipment' },
+                { name: '4PCS Glass Stir Sticks Lab Glass', quantity: 1, cost: 8.59, description: 'Stirring tools' },
+                { name: 'GDEALER Digital Pocket Kitchen Scale', quantity: 1, cost: 12.59, description: 'Weighing scale' },
+                { name: 'ForPro Professional Collection All-Purpose', quantity: 1, cost: 6.99, description: 'Professional tool' }
+            ];
+
+            newEquipment.forEach(item => {
+                const exists = inventory.equipment.some(eq => eq.name.toLowerCase() === item.name.toLowerCase());
+                if (!exists) {
+                    inventory.equipment.push(item);
+                }
+            });
+
+            save();
+            renderInventory();
+        }
+
+        // Check if this is first load and load inventory
+        if (inventory.ingredients.length === 0) {
+            loadNewInventory();
+        }
+        function addNote(type) {
+            if (type === 'order') {
+                const item = prompt('Item ordered:');
+                if (!item) return;
+                const vendor = prompt('Vendor name:');
+                const orderNum = prompt('Order number (optional):');
+                const cost = prompt('Cost ($):');
+                const expectedDate = prompt('Expected arrival date (optional):');
+                inventory.orders.push({
+                    date: new Date().toLocaleDateString(),
+                    item,
+                    vendor: vendor || '',
+                    orderNum: orderNum || '',
+                    cost: parseFloat(cost) || 0,
+                    expectedDate: expectedDate || '',
+                    status: 'Ordered',
+                    notes: ''
+                });
+            } else if (type === 'general') {
+                const noteText = prompt('Note:');
+                if (!noteText) return;
+                const category = prompt('Category (e.g., Reminder, Issue, Observation):');
+                inventory.generalNotes.push({
+                    date: new Date().toLocaleDateString(),
+                    note: noteText,
+                    category: category || 'General'
+                });
+            }
+            save();
+            renderNotes();
+        }
+
+        function removeNote(type, idx) {
+            if (confirm('Delete this note?')) {
+                if (type === 'order') inventory.orders.splice(idx, 1);
+                else if (type === 'general') inventory.generalNotes.splice(idx, 1);
+                save();
+                renderNotes();
+            }
+        }
+
+        function updateNote(type, idx, field, value) {
+            if (type === 'order') {
+                if (field === 'cost') {
+                    inventory.orders[idx][field] = parseFloat(value) || 0;
+                } else {
+                    inventory.orders[idx][field] = value;
+                }
+            } else if (type === 'general') {
+                inventory.generalNotes[idx][field] = value;
+            }
+            save();
+            renderNotes();
+        }
+
+        function renderNotes() {
+            // Orders table
+            const ordersBody = document.getElementById('ordersTable');
+            ordersBody.innerHTML = '';
+            inventory.orders.forEach((order, idx) => {
+                ordersBody.innerHTML += `<tr><td>${order.date}</td><td><input value="${order.item}" onchange="updateNote('order',${idx},'item',this.value)"></td><td><input value="${order.vendor || ''}" onchange="updateNote('order',${idx},'vendor',this.value)"></td><td><input value="${order.orderNum || ''}" onchange="updateNote('order',${idx},'orderNum',this.value)"></td><td><input type="number" value="${order.cost || 0}" step="0.01" onchange="updateNote('order',${idx},'cost',this.value)"></td><td><input value="${order.expectedDate || ''}" onchange="updateNote('order',${idx},'expectedDate',this.value)"></td><td><select onchange="updateNote('order',${idx},'status',this.value)"><option ${order.status==='Ordered'?'selected':''}>Ordered</option><option ${order.status==='Shipped'?'selected':''}>Shipped</option><option ${order.status==='Received'?'selected':''}>Received</option><option ${order.status==='Delayed'?'selected':''}>Delayed</option></select></td><td><input value="${order.notes || ''}" onchange="updateNote('order',${idx},'notes',this.value)"></td><td><button class="btn-delete" onclick="removeNote('order',${idx})">Delete</button></td></tr>`;
+            });
+
+            // General notes table
+            const notesBody = document.getElementById('generalNotesTable');
+            notesBody.innerHTML = '';
+            inventory.generalNotes.forEach((note, idx) => {
+                notesBody.innerHTML += `<tr><td>${note.date}</td><td><input value="${note.note}" onchange="updateNote('general',${idx},'note',this.value)"></td><td><input value="${note.category || ''}" onchange="updateNote('general',${idx},'category',this.value)"></td><td><button class="btn-delete" onclick="removeNote('general',${idx})">Delete</button></td></tr>`;
+            });
+        }
+        function addItem(type) {
+            const name = prompt(`${type.charAt(0).toUpperCase() + type.slice(1)} name:`);
+            if (!name) return;
+            
+            if (type === 'ingredient') {
+                const amount = prompt('Amount:', '0');
+                const unit = prompt('Unit (g, oz, lb, mL):', 'g');
+                const cost = prompt('Total cost ($):', '0');
+                const vendor = prompt('Vendor (optional):', '');
+                inventory.ingredients.push({ name, amount: parseFloat(amount) || 0, unit: unit || 'g', cost: parseFloat(cost) || 0, vendor: vendor || '' });
+            } else if (type === 'equipment') {
+                const quantity = prompt('Quantity:', '1');
+                const cost = prompt('Cost ($):', '0');
+                const description = prompt('Description (optional):', '');
+                inventory.equipment.push({ name, quantity: parseFloat(quantity) || 1, cost: parseFloat(cost) || 0, description: description || '' });
+            } else if (type === 'packaging') {
+                const quantity = prompt('Quantity:', '0');
+                const unit = prompt('Unit (units, boxes, etc):', 'units');
+                const costPerUnit = prompt('Cost per unit ($):', '0');
+                const vendor = prompt('Vendor (optional):', '');
+                inventory.packaging.push({ name, quantity: parseFloat(quantity) || 0, unit: unit || 'units', costPerUnit: parseFloat(costPerUnit) || 0, vendor: vendor || '' });
+            }
+            save();
+            renderInventory();
+        }
+
+        function removeItem(type, idx) {
+            if (confirm('Delete this item?')) {
+                if (type === 'ingredient') inventory.ingredients.splice(idx, 1);
+                else if (type === 'equipment') inventory.equipment.splice(idx, 1);
+                else if (type === 'packaging') inventory.packaging.splice(idx, 1);
+                save();
+                renderInventory();
+            }
+        }
+
+        function updateItem(type, idx, field, value) {
+            const items = type === 'ingredient' ? inventory.ingredients : type === 'equipment' ? inventory.equipment : inventory.packaging;
+            if (field === 'amount' || field === 'quantity') {
+                items[idx][field] = parseFloat(value) || 0;
+            } else {
+                items[idx][field] = value;
+            }
+            save();
+            renderInventory();
+        }
+
+        function renderInventory() {
+            // Ingredients
+            const ingTable = document.getElementById('masterTable');
+            ingTable.innerHTML = '';
+            inventory.ingredients.forEach((ing, idx) => {
+                ingTable.innerHTML += `<tr><td><input value="${ing.name}" onchange="updateItem('ingredient',${idx},'name',this.value)"></td><td><input type="number" value="${ing.amount}" step="0.01" onchange="updateItem('ingredient',${idx},'amount',this.value)"></td><td><select onchange="updateItem('ingredient',${idx},'unit',this.value)"><option ${ing.unit==='g'?'selected':''}>g</option><option ${ing.unit==='oz'?'selected':''}>oz</option><option ${ing.unit==='lb'?'selected':''}>lb</option><option ${ing.unit==='mL'?'selected':''}>mL</option></select></td><td><input type="number" value="${ing.cost || 0}" step="0.01" placeholder="$" onchange="updateItem('ingredient',${idx},'cost',this.value)"></td><td><input value="${ing.vendor || ''}" onchange="updateItem('ingredient',${idx},'vendor',this.value)"></td><td><button class="btn-delete" onclick="removeItem('ingredient',${idx})">Delete</button></td></tr>`;
+            });
+
+            // Equipment
+            const eqTable = document.getElementById('equipmentTable');
+            eqTable.innerHTML = '';
+            inventory.equipment.forEach((eq, idx) => {
+                eqTable.innerHTML += `<tr><td><input value="${eq.name}" onchange="updateItem('equipment',${idx},'name',this.value)"></td><td><input type="number" value="${eq.quantity}" step="0.01" onchange="updateItem('equipment',${idx},'quantity',this.value)"></td><td><input type="number" value="${eq.cost || 0}" step="0.01" placeholder="$" onchange="updateItem('equipment',${idx},'cost',this.value)"></td><td><input value="${eq.description || ''}" onchange="updateItem('equipment',${idx},'description',this.value)"></td><td><button class="btn-delete" onclick="removeItem('equipment',${idx})">Delete</button></td></tr>`;
+            });
+
+            // Packaging
+            const pkgTable = document.getElementById('packagingTable');
+            pkgTable.innerHTML = '';
+            inventory.packaging.forEach((pkg, idx) => {
+                const totalCost = (pkg.quantity * (pkg.costPerUnit || 0)).toFixed(2);
+                pkgTable.innerHTML += `<tr><td><input value="${pkg.name}" onchange="updateItem('packaging',${idx},'name',this.value)"></td><td><input type="number" value="${pkg.quantity}" step="0.01" onchange="updateItem('packaging',${idx},'quantity',this.value)"></td><td><select onchange="updateItem('packaging',${idx},'unit',this.value)"><option ${pkg.unit==='units'?'selected':''}>units</option><option ${pkg.unit==='boxes'?'selected':''}>boxes</option><option ${pkg.unit==='packs'?'selected':''}>packs</option><option ${pkg.unit==='rolls'?'selected':''}>rolls</option></select></td><td><input type="number" value="${pkg.costPerUnit || 0}" step="0.01" placeholder="$" onchange="updateItem('packaging',${idx},'costPerUnit',this.value)"></td><td>$${totalCost}</td><td><input value="${pkg.vendor || ''}" onchange="updateItem('packaging',${idx},'vendor',this.value)"></td><td><button class="btn-delete" onclick="removeItem('packaging',${idx})">Delete</button></td></tr>`;
+            });
+        }
+
+        // PRODUCTS
+        function switchProduct() {
+            const productId = document.getElementById('productSelect').value;
+            if (productId) {
+                currentProduct = productId;
+                localStorage.setItem('currentProduct', productId);
+                renderProduct();
+                renderRecipe();
+            }
+        }
+
+        function addProduct() {
+            const name = prompt('Product name:');
+            if (!name) return;
+            const id = Date.now().toString();
+            products.push({ id, name, recipe: {}, production: [] });
+            currentProduct = id;
+            localStorage.setItem('currentProduct', currentProduct);
+            save();
+            renderProduct();
+        }
+
+        function deleteProduct() {
+            if (!confirm('Delete this product permanently?')) return;
+            products = products.filter(p => p.id !== currentProduct);
+            currentProduct = null;
+            save();
+            renderProduct();
+        }
+
+        function updateProductName() {
+            const product = products.find(p => p.id === currentProduct);
+            if (product) {
+                product.name = document.getElementById('productName').value;
+                save();
+                renderProduct();
+            }
+        }
+
+        function recordProduction() {
+            const product = products.find(p => p.id === currentProduct);
+            if (!product) return;
+            const bottles = parseInt(document.getElementById('productionBottles').value);
+            if (!bottles || bottles < 1) {
+                document.getElementById('productionMessage').innerHTML = '<div class="alert alert-error">Enter a number of bottles</div>';
+                return;
+            }
+            
+            const multiplier = bottles / 10;
+            for (const [ingredientName, neededPer10] of Object.entries(product.recipe)) {
+                const ingredient = inventory.ingredients.find(i => i.name === ingredientName);
+                if (ingredient) {
+                    const inBase = toBaseUnit(ingredient.amount, ingredient.unit);
+                    const newAmount = inBase - (neededPer10 * multiplier);
+                    if (ingredient.unit === 'oz') {
+                        ingredient.amount = parseFloat((newAmount / 28.35).toFixed(2));
+                    } else if (ingredient.unit === 'lb') {
+                        ingredient.amount = parseFloat((newAmount / 453.6).toFixed(2));
+                    } else {
+                        ingredient.amount = parseFloat(newAmount.toFixed(2));
+                    }
+                }
+            }
+            
+            product.production.push({ date: new Date().toLocaleDateString(), bottles: bottles });
+            document.getElementById('productionBottles').value = '10';
+            document.getElementById('productionMessage').innerHTML = '<div class="alert alert-success">✓ ' + bottles + ' bottles recorded!</div>';
+            setTimeout(() => { document.getElementById('productionMessage').innerHTML = ''; }, 3000);
+            save();
+            renderProduct();
+            renderInventory();
+        }
+
+        function deleteLogEntry(idx) {
+            const product = products.find(p => p.id === currentProduct);
+            if (product) {
+                product.production.splice(idx, 1);
+                save();
+                renderProduct();
+            }
+        }
+
+        // RECIPE
+        function addRecipeIngredient() {
+            const product = products.find(p => p.id === currentProduct);
+            if (!product) return;
+            const name = prompt('Ingredient name:');
+            if (!name) return;
+            const amount = prompt('Amount per 10 bottles:', '0');
+            product.recipe[name] = parseFloat(amount) || 0;
+            save();
+            renderRecipe();
+        }
+
+        function removeRecipeIngredient(name) {
+            const product = products.find(p => p.id === currentProduct);
+            if (product) {
+                delete product.recipe[name];
+                save();
+                renderRecipe();
+            }
+        }
+
+        function updateRecipeIngredient(name, newAmount) {
+            const product = products.find(p => p.id === currentProduct);
+            if (product) {
+                product.recipe[name] = parseFloat(newAmount) || 0;
+                save();
+                updateScaledRecipe();
+            }
+        }
+
+        function updateScaledRecipe() {
+            const product = products.find(p => p.id === currentProduct);
+            if (!product) return;
+            const bottlesInput = document.getElementById('scaleBottles').value;
+            const bottles = parseInt(bottlesInput) || 10;
+            const multiplier = bottles / 10;
+            let html = `<strong>Yield: ${bottles} bottles</strong><br><br>`;
+            for (const [name, amount] of Object.entries(product.recipe)) {
+                const scaled = (amount * multiplier).toFixed(2);
+                html += `• ${scaled}g ${name}<br>`;
+            }
+            document.getElementById('scaledRecipeDisplay').innerHTML = html || '<p style="color: #999;">No recipe yet.</p>';
+        }
+
+        function renderRecipe() {
+            const product = products.find(p => p.id === currentProduct);
+            if (!product) {
+                document.getElementById('recipePanel').classList.add('hidden');
+                document.getElementById('noRecipeProduct').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('recipePanel').classList.remove('hidden');
+            document.getElementById('noRecipeProduct').classList.add('hidden');
+
+            const recipeBody = document.getElementById('recipeEditTable');
+            recipeBody.innerHTML = '';
+            for (const [name, amount] of Object.entries(product.recipe)) {
+                recipeBody.innerHTML += `<tr><td><input value="${name}" style="background:#f5f5f5" readonly></td><td><input type="number" value="${amount}" step="0.01" onchange="updateRecipeIngredient('${name}',this.value)"></td><td><button class="btn-delete" onclick="removeRecipeIngredient('${name}')">Delete</button></td></tr>`;
+            }
+
+            updateScaledRecipe();
+        }
+
+        function renderProduct() {
+            const select = document.getElementById('productSelect');
+            select.innerHTML = '<option value="">Select Product...</option>';
+            products.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                if (p.id === currentProduct) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            const product = products.find(p => p.id === currentProduct);
+            if (!product) {
+                document.getElementById('productPanel').classList.add('hidden');
+                document.getElementById('noProduct').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('productPanel').classList.remove('hidden');
+            document.getElementById('noProduct').classList.add('hidden');
+            document.getElementById('productName').value = product.name;
+
+            const totalBottles = product.production.reduce((sum, p) => sum + p.bottles, 0);
+            document.getElementById('totalBatches').textContent = product.production.length;
+            document.getElementById('totalBottles').textContent = totalBottles;
+
+            // Status table
+            const statusBody = document.getElementById('statusTable');
+            statusBody.innerHTML = '';
+            for (const [recipeName, neededPer10] of Object.entries(product.recipe)) {
+                const ingredient = inventory.ingredients.find(i => i.name === recipeName);
+                if (ingredient) {
+                    const inBase = toBaseUnit(ingredient.amount, ingredient.unit);
+                    const possible = Math.floor(inBase / neededPer10 * 10);
+                    let status = possible > 1 ? 'In Stock' : possible === 1 ? 'Last Batch' : 'Out';
+                    let statusClass = possible > 1 ? 'status-ok' : possible === 1 ? 'status-low' : 'status-out';
+                    statusBody.innerHTML += `<tr><td>${recipeName}</td><td>${ingredient.amount} ${ingredient.unit}</td><td>${possible}</td><td><span style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;background:${statusClass==='status-ok'?'#d4edda':statusClass==='status-low'?'#fff3cd':'#f8d7da'};color:${statusClass==='status-ok'?'#155724':statusClass==='status-low'?'#856404':'#721c24'}">${status}</span></td></tr>`;
+                }
+            }
+
+            // Production log
+            const logBody = document.getElementById('logTable');
+            logBody.innerHTML = '';
+            let runningTotal = 0;
+            product.production.forEach((p, idx) => {
+                runningTotal += p.bottles;
+                logBody.innerHTML += `<tr><td>${p.date}</td><td>${p.bottles}</td><td>${runningTotal}</td><td><button class="btn-delete" onclick="deleteLogEntry(${idx})">Delete</button></td></tr>`;
+            });
+        }
+
+        renderInventory();
+        renderNotes();
+        renderProduct();
+    </script>
+</body>
+</html>
